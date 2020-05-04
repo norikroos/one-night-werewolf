@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Setting from './Setting';
+import RoleAction from './RoleAction';
 import { connect } from 'react-redux';
 import {
   fetchRoomInfo,
@@ -36,6 +37,9 @@ const Room = props => {
     // }
     if (roomState === 0) {
       return <Setting roomId={roomId} {...props} />;
+    }
+    if (roomState === 1) {
+      return <RoleAction roomId={roomId} {...props} />;
     }
   }
   return <LoadingBox />;
