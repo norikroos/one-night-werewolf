@@ -7,6 +7,9 @@ import Copyright from './components/layout/Copyright';
 import Box from '@material-ui/core/Box';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import theme from './styles/theme';
+import Auth from './components/auth/Auth';
+import SignIn from './components/auth/SignIn';
+import SignUp from './components/auth/SignUp';
 
 function App() {
   // const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
@@ -34,7 +37,16 @@ function App() {
             },
           ]}
         />
-        <Switch></Switch>
+        <Switch>
+          <Route path="/signin" component={SignIn} />
+          <Route path="/signup" component={SignUp} />
+          <Auth>
+            <Switch></Switch>
+          </Auth>
+        </Switch>
+        <Box mt={5}>
+          <Copyright />
+        </Box>
       </ThemeProvider>
     </BrowserRouter>
   );
