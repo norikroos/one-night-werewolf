@@ -10,6 +10,7 @@ import theme from './styles/theme';
 import Auth from './components/auth/Auth';
 import SignIn from './components/auth/SignIn';
 import SignUp from './components/auth/SignUp';
+import Room from './components/room/Room';
 import Home from './components/Home';
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
           <Route path="/signup" component={SignUp} />
           <Auth>
             <Switch>
+              <Route path="/room/:id" component={Room} />
               <Route path="/" component={Home} />
             </Switch>
           </Auth>
