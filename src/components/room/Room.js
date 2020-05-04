@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
+import Setting from './Setting';
 import { connect } from 'react-redux';
 import {
   fetchRoomInfo,
@@ -30,6 +30,14 @@ const Room = props => {
     fetchJoinUsers(roomId);
   }, [Object.keys(joinUsers).join(',')]);
 
+  if (joinUsers[uid]) {
+    // if (!joinUsers[uid]) {
+    //   return <Redirect to="/" />;
+    // }
+    if (roomState === 0) {
+      return <Setting roomId={roomId} {...props} />;
+    }
+  }
   return <LoadingBox />;
 };
 
