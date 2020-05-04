@@ -10,6 +10,7 @@ import theme from './styles/theme';
 import Auth from './components/auth/Auth';
 import SignIn from './components/auth/SignIn';
 import SignUp from './components/auth/SignUp';
+import Home from './components/Home';
 
 function App() {
   // const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
@@ -41,7 +42,9 @@ function App() {
           <Route path="/signin" component={SignIn} />
           <Route path="/signup" component={SignUp} />
           <Auth>
-            <Switch></Switch>
+            <Switch>
+              <Route path="/" component={Home} />
+            </Switch>
           </Auth>
         </Switch>
         <Box mt={5}>
