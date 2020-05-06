@@ -22,15 +22,11 @@ export const startDiscussion = functions
     // Get an object representing the document
     // e.g. {'name': 'Marie', 'age': 66}
     const roomId = context.params.roomId;
-    const querySnapshot = await firestore
-      .collection("rooms")
-      .doc(roomId)
-      .collection("actionDatas")
-      .get();
-    const actionDatas: StringKeyObject = {};
-    querySnapshot.forEach((doc) => {
-      actionDatas[doc.id] = doc.data();
-    });
+    const promise1 = fetchRoomInfo(roomId);
+    const promise2 = fetchActionDatas(roomId);
+    const [roomData, actionDatas] = await Promise.all([promise1, promise2]);
+
+    if (roomData.state !== 1) return;
 
     const allUserCount = Object.keys(actionDatas).length;
     const finishUserCount = Object.values(actionDatas).filter(
@@ -45,6 +41,35 @@ export const startDiscussion = functions
       });
     } else {
       console.log(`wait user action. ${finishUserCount} user finished.`);
+    }
+  });
+
+export const showResult = functions
+  .region("asia-northeast1")
+  .firestore.document("rooms/{roomId}/actionDatas/{userId}")
+  .onUpdate(async (change, context) => {
+    // Get an object representing the document
+    // e.g. {'name': 'Marie', 'age': 66}
+    const roomId = context.params.roomId;
+    const promise1 = fetchRoomInfo(roomId);
+    const promise2 = fetchActionDatas(roomId);
+    const [roomData, actionDatas] = await Promise.all([promise1, promise2]);
+
+    if (roomData.state !== 3) return;
+
+    const allUserCount = Object.keys(actionDatas).length;
+    const finishUserCount = Object.values(actionDatas).filter(
+      (d) => d.voteUserId
+    ).length;
+
+    if (finishUserCount === allUserCount) {
+      // finishAction = true のユーザー数と全体ユーザー数が一致したら議論を開始する
+      console.log("finish voting all user. start updateing room state.");
+      await firestore.collection("rooms").doc(roomId).update({
+        state: 4,
+      });
+    } else {
+      console.log(`wait user voting. ${finishUserCount} user finished.`);
     }
   });
 
@@ -119,27 +144,34 @@ export const createRoom = functions
     return res;
   });
 
-// TODO: roomStateによる分岐
 export const joinRoom = functions
   .region("asia-northeast1")
-  .https.onCall((data, context) => {
+  .https.onCall(async (data, context) => {
     const userId = context.auth?.uid;
     const roomId = data.roomId;
 
     if (!roomId || !userId) throw new Error("invalid request");
 
-    const res = firestore
-      .collection("rooms")
-      .doc(roomId)
-      .get()
-      .then((doc) => {
-        const roomData = doc.data();
-        if (!roomData || roomData.state !== 0)
-          throw new Error("invalid roomId");
-        return setRoomToUser(roomId, userId);
-      })
-      .then(() => roomId);
-    return res;
+    const promise1 = fetchRoomUsers(roomId);
+    const promise2 = fetchRoomInfo(roomId);
+
+    const [joinUsers, roomData] = await Promise.all([promise1, promise2]);
+    console.log(roomData);
+    if (!Object.keys(roomData).includes("state")) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "ルームIDが不正です"
+      );
+    }
+    if (!joinUsers[userId] && roomData.state > 0) {
+      // https://cloud.google.com/apis/design/errors?hl=ja#http_mapping
+      throw new functions.https.HttpsError(
+        "failed-precondition",
+        "指定されたルームはゲーム進行中です"
+      );
+    }
+    await setRoomToUser(roomId, userId);
+    return roomId;
   });
 
 const setRoomToUser = (roomId: string, userId: string) => {
@@ -167,11 +199,12 @@ export const startGame = functions
     if (!roomId || !userId) throw new Error("invalid request");
 
     const promise1 = fetchRoomUsers(roomId);
-    const promise2 = firestore.collection("rooms").doc(roomId).get();
+    const promise2 = fetchRoomInfo(roomId);
 
-    const [joinUsers, roomDoc] = await Promise.all([promise1, promise2]);
-    const roomData = roomDoc.data();
+    const [joinUsers, roomData] = await Promise.all([promise1, promise2]);
     if (!joinUsers || !roomData) throw new Error("invalid roomId");
+    if (!joinUsers[userId] || roomData.state !== 0)
+      throw new Error("invalid request");
     const shuffledRoles = shuffle(selectedRoles);
     const promises = Object.keys(joinUsers).map(
       (uid: string, index: number) => {
@@ -180,20 +213,24 @@ export const startGame = functions
           .doc(roomId)
           .collection("actionDatas")
           .doc(uid)
-          .update({
+          .set({
             beforeRole: shuffledRoles[index],
             afterRole: shuffledRoles[index],
             selectUserId: "",
-            voteUserUd: "",
+            voteUserId: "",
             finishAction: false,
           });
       }
     );
     await Promise.all(promises);
-    await firestore.collection("rooms").doc(roomId).update({
-      state: 1,
-      selectedRoles,
-    });
+    await firestore
+      .collection("rooms")
+      .doc(roomId)
+      .update({
+        state: 1,
+        count: admin.firestore.FieldValue.increment(1),
+        selectedRoles,
+      });
     return true;
   });
 
@@ -207,7 +244,7 @@ const shuffle = ([...array]) => {
 };
 
 // ロールデータを取得
-const fetchUserRoles = async (roomId: string, userId: string) => {
+const fetchActionDatas = async (roomId: string) => {
   return firestore
     .collection("rooms")
     .doc(roomId)
@@ -231,10 +268,11 @@ export const fetchAssignedRoles = functions
     if (!roomId || !userId) throw new Error("invalid request");
 
     const promise1 = fetchRoomInfo(roomId);
-    const promise2 = fetchUserRoles(roomId, userId);
+    const promise2 = fetchActionDatas(roomId);
 
     const [roomInfo, roleDatas] = await Promise.all([promise1, promise2]);
     let targetId = roleDatas[userId].selectUserId;
+    console.log(selectUserId);
 
     if (!targetId && selectUserId) {
       targetId = selectUserId; // 既にアクション済みでなければターゲットに代入
@@ -243,9 +281,11 @@ export const fetchAssignedRoles = functions
         .doc(roomId)
         .collection("actionDatas")
         .doc(userId)
-        .update({ selectUserId: targetId }); // 選択ユーザーを更新
-    }
+        .update({ selectUserId }); // 選択ユーザーを更新
 
+      roleDatas[userId] = { ...roleDatas[userId], selectUserId };
+    }
+    console.log(targetId);
     console.log(roleDatas);
 
     const resultRoleDatas: StringKeyObject = {
@@ -295,11 +335,13 @@ export const fetchAssignedRoles = functions
       }
     }
     if (roleDatas[userId].beforeRole === "werewolf") {
-      Object.keys(roleDatas).forEach((uid) => {
-        if (uid !== userId && roleDatas[uid].beforeRole === "werewolf") {
-          resultRoleDatas[uid] = { beforeRole: roleDatas[uid].beforeRole }; // afterRoleが交換されている場合があるので隠す
-        }
-      });
+      if (targetId) {
+        Object.keys(roleDatas).forEach((uid) => {
+          if (uid !== userId && roleDatas[uid].beforeRole === "werewolf") {
+            resultRoleDatas[uid] = { beforeRole: roleDatas[uid].beforeRole }; // afterRoleが交換されている場合があるので隠す
+          }
+        });
+      }
     }
 
     return resultRoleDatas;
@@ -323,4 +365,65 @@ export const finishRoleAction = functions
       .then(() => {
         return updateData;
       });
+  });
+
+export const finishDiscussion = functions
+  .region("asia-northeast1")
+  .https.onCall(async (data, context) => {
+    const userId = context.auth?.uid;
+    const roomId = data.roomId;
+    if (!roomId || !userId) throw new Error("invalid request");
+    const joinUsers = await fetchRoomUsers(roomId);
+    if (!joinUsers || !joinUsers[userId]) throw new Error("invalid request");
+    return firestore.collection("rooms").doc(roomId).update({ state: 3 });
+  });
+
+// 処刑する人を登録
+export const executeUser = functions
+  .region("asia-northeast1")
+  .https.onCall((data, context) => {
+    const userId = context.auth?.uid;
+    const roomId = data.roomId;
+    const selectUserId = data.selectUserId;
+    if (!roomId || !userId || !selectUserId) throw new Error("invalid request");
+    const updateData = { voteUserId: selectUserId };
+    return firestore
+      .collection("rooms")
+      .doc(roomId)
+      .collection("actionDatas")
+      .doc(userId)
+      .update(updateData)
+      .then(() => {
+        return updateData;
+      });
+  });
+
+export const fetchResult = functions
+  .region("asia-northeast1")
+  .https.onCall(async (data, context) => {
+    const userId = context.auth?.uid;
+    const roomId = data.roomId;
+
+    if (!roomId || !userId) throw new Error("invalid request");
+
+    const roomInfo = await fetchRoomInfo(roomId);
+    if (roomInfo.state !== 4) throw new Error("invalid request");
+
+    const result = await fetchActionDatas(roomId);
+
+    return result;
+  });
+
+export const resetGame = functions
+  .region("asia-northeast1")
+  .https.onCall(async (data, context) => {
+    const userId = context.auth?.uid;
+    const roomId = data.roomId;
+
+    if (!roomId || !userId) throw new Error("invalid request");
+
+    const joinUsers = await fetchRoomUsers(roomId);
+    if (!joinUsers || !joinUsers[userId]) throw new Error("invalid request");
+
+    return firestore.collection("rooms").doc(roomId).update({ state: 0 });
   });
