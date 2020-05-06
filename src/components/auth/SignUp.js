@@ -46,7 +46,11 @@ const SignUp = props => {
     password: '',
   });
 
-  if (auth.uid) return <Redirect to="/" />;
+  if (auth.uid) {
+    const params = new URL(document.location).searchParams;
+    const redirectFrom = params.get('redirectFrom');
+    return <Redirect to={redirectFrom || '/'} />;
+  }
 
   const handleChange = event => {
     setState({ ...state, [event.target.name]: event.target.value });
@@ -64,7 +68,7 @@ const SignUp = props => {
           <LockOutlinedIcon />
         </Avatar>
         <Typography component="h1" variant="h5">
-          Sign up
+          ユーザー登録
         </Typography>
         <form className={classes.form} onSubmit={handleSubmit} noValidate>
           <Typography color="error">{authError}</Typography>
@@ -75,7 +79,7 @@ const SignUp = props => {
                 required
                 fullWidth
                 id="name"
-                label="プレイヤー名"
+                label="ゲームで使用する名前"
                 name="name"
                 autoComplete="pname"
                 onChange={handleChange}
@@ -125,8 +129,8 @@ const SignUp = props => {
           />
           <Grid container justify="flex-end">
             <Grid item>
-              <Link href="/signin" variant="body2">
-                Already have an account? Sign in
+              <Link href={`signin${document.location.search}`} variant="body2">
+                ログインはこちら
               </Link>
             </Grid>
           </Grid>
@@ -137,7 +141,6 @@ const SignUp = props => {
 };
 
 const mapStateProps = state => {
-  console.log(state);
   return {
     authError: state.auth.authError,
     auth: state.firebase.auth,

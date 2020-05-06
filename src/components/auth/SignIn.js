@@ -60,7 +60,13 @@ const SignIn = props => {
     password: '',
   });
 
-  if (auth.uid) return <Redirect to="/" />;
+  console.log(props);
+
+  if (auth.uid) {
+    const params = new URL(document.location).searchParams;
+    const redirectFrom = params.get('redirectFrom');
+    return <Redirect to={redirectFrom || '/'} />;
+  }
 
   const handleChange = event => {
     setState({ ...state, [event.target.name]: event.target.value });
@@ -78,7 +84,7 @@ const SignIn = props => {
           <LockOutlinedIcon />
         </Avatar>
         <Typography component="h1" variant="h5">
-          Sign in
+          ログイン
         </Typography>
         <form className={classes.form} onSubmit={handleSubmit} noValidate>
           <Typography color="error">{authError}</Typography>
@@ -88,7 +94,7 @@ const SignIn = props => {
             required
             fullWidth
             id="email"
-            label="Email Address"
+            label="メールアドレス"
             name="email"
             autoComplete="email"
             autoFocus
@@ -100,16 +106,16 @@ const SignIn = props => {
             required
             fullWidth
             name="password"
-            label="Password"
+            label="パスワード"
             type="password"
             id="password"
             autoComplete="current-password"
             onChange={handleChange}
           />
-          <FormControlLabel
+          {/* <FormControlLabel
             control={<Checkbox value="remember" color="primary" />}
             label="Remember me"
-          />
+          /> */}
           <LoadingButton
             type="submit"
             fullWidth
@@ -122,13 +128,13 @@ const SignIn = props => {
           />
           <Grid container>
             <Grid item xs>
-              <Link href="/reset" variant="body2">
-                Forgot password?
-              </Link>
+              {/* <Link href="/reset" variant="body2">
+                パスワードを忘れた場合
+              </Link> */}
             </Grid>
             <Grid item>
-              <Link href="/signup" variant="body2">
-                {"Don't have an account? Sign Up"}
+              <Link href={`signup${document.location.search}`} variant="body2">
+                {'ユーザー登録はこちら'}
               </Link>
             </Grid>
           </Grid>
@@ -139,7 +145,6 @@ const SignIn = props => {
 };
 
 const mapStateProps = state => {
-  console.log(state);
   return {
     authError: state.auth.authError,
     auth: state.firebase.auth,
