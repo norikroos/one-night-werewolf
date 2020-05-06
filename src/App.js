@@ -2,11 +2,10 @@ import React from 'react';
 import { BrowserRouter, Switch, Route } from 'react-router-dom';
 import useMediaQuery from '@material-ui/core/useMediaQuery';
 import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
-import { Helmet } from 'react-helmet';
 import Copyright from './components/layout/Copyright';
-import Box from '@material-ui/core/Box';
-import CssBaseline from '@material-ui/core/CssBaseline';
+import { Box, CssBaseline } from '@material-ui/core';
 import theme from './styles/theme';
+import Navbar from './components/layout/Navbar';
 import Auth from './components/auth/Auth';
 import SignIn from './components/auth/SignIn';
 import SignUp from './components/auth/SignUp';
@@ -30,15 +29,7 @@ function App() {
     <BrowserRouter>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Helmet
-          title="One Night Werewolf Online"
-          meta={[
-            {
-              name: 'viewport',
-              content: 'width=device-width, initial-scale=1, user-scalable=no',
-            },
-          ]}
-        />
+        <Navbar />
         <Switch>
           <Route path="/signin" component={SignIn} />
           <Route path="/signup" component={SignUp} />

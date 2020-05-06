@@ -9,14 +9,15 @@ import {
 } from '@material-ui/core';
 import HomeIcon from '@material-ui/icons/Home';
 import { makeStyles } from '@material-ui/core/styles';
-import SignOutLink from './layout/SignOutLink';
 import LoadingButton from './common/LoadingButton';
+import SlideSnackbar from './common/SlideSnackbar';
 
 import { connect } from 'react-redux';
 import {
   resetActiveRoom,
   createRoom,
   joinRoom,
+  removeError,
 } from '../store/actions/roomActions';
 import { Redirect } from 'react-router-dom';
 
@@ -36,7 +37,7 @@ const useStyles = makeStyles(theme => ({
     marginTop: theme.spacing(4),
   },
   submit: {
-    margin: theme.spacing(3, 0, 2),
+    margin: theme.spacing(0.5, 0, 0),
   },
 }));
 
@@ -54,12 +55,17 @@ const Home = props => {
     joinRoom,
     creating,
     joining,
+    errorMessage,
+    removeError,
   } = props;
-  console.log(activeRoomId);
 
   useEffect(() => {
     resetActiveRoom();
   }, [activeRoomId]);
+
+  useEffect(() => {
+    setRedirectRoomId();
+  }, []);
 
   if (!creating && !joining && activeRoomId)
     return <Redirect to={`/room/${activeRoomId}`} />;
@@ -78,10 +84,25 @@ const Home = props => {
     joinRoom(state.roomId);
   };
 
+  const handleSnackbarClose = (event, reason) => {
+    removeError();
+  };
+
+  const setRedirectRoomId = () => {
+    const url = window.location.href;
+    const name = 'redirectFrom';
+    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+      results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    const decodedValue = decodeURIComponent(results[2].replace(/\+/g, ' '));
+    console.log(decodedValue);
+    setState({ ...state, roomId: decodedValue.replace('/room/', '') });
+  };
+
   return (
     <Container component="main" maxWidth="xs">
       <div className={classes.paper}>
-        <SignOutLink />
         <Avatar className={classes.avatar}>
           <HomeIcon />
         </Avatar>
@@ -103,6 +124,7 @@ const Home = props => {
                 autoComplete="rname"
                 autoFocus
                 onChange={handleChange}
+                defaultValue={state.roomName}
               />
             </Grid>
             <Grid item xs={4}>
@@ -134,6 +156,7 @@ const Home = props => {
                 name="roomId"
                 autoComplete="rid"
                 autoFocus
+                value={state.roomId}
                 onChange={handleChange}
               />
             </Grid>
@@ -152,6 +175,14 @@ const Home = props => {
           </Grid>
         </form>
       </div>
+      <SlideSnackbar
+        handleClose={handleSnackbarClose}
+        open={errorMessage}
+        message={errorMessage}
+        autoHideDuration={3000}
+        sevenry="error"
+        color="error"
+      />
     </Container>
   );
 };
@@ -162,6 +193,7 @@ const mapStateToProps = state => {
     auth: state.firebase.auth,
     creating: state.room.creating,
     joining: state.room.joining,
+    errorMessage: state.room.errorMessage,
   };
 };
 
@@ -170,6 +202,7 @@ const mapDispatchToProps = dispatch => {
     resetActiveRoom: () => dispatch(resetActiveRoom()),
     createRoom: roomName => dispatch(createRoom(roomName)),
     joinRoom: roomId => dispatch(joinRoom(roomId)),
+    removeError: () => dispatch(removeError()),
   };
 };
 

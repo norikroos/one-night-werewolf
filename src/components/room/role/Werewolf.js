@@ -20,6 +20,8 @@ import {
 } from '@material-ui/core';
 import { connect } from 'react-redux';
 
+import LoadingCard from '../../common/LoadingCard';
+
 const useStyles = makeStyles(theme => ({
   paper: {
     marginTop: theme.spacing(2),
@@ -37,6 +39,12 @@ const useStyles = makeStyles(theme => ({
   description: {
     margin: theme.spacing(3, 0),
   },
+  box: {
+    marginTop: theme.spacing(2),
+    textAlign: 'center',
+    display: 'flex',
+    justifyContent: 'center',
+  },
   roleCard: {
     maxWidth: '100%',
   },
@@ -46,6 +54,8 @@ const useStyles = makeStyles(theme => ({
   roles: {
     padding: theme.spacing(1, 0, 3, 0),
     textAlign: 'center',
+    display: 'flex',
+    justifyContent: 'center',
   },
 }));
 
@@ -58,15 +68,29 @@ const Werewolf = props => {
     actionDatas,
     joinUsers,
     fetchAssignedRoles,
+    actionState,
   } = props;
   const actionData = actionDatas[uid];
-  console.log(actionData);
-  console.log(roles);
-  console.log(roles[actionData.beforeRole]);
 
-  useEffect(() => {
-    fetchAssignedRoles(roomId, uid); // 人狼はアクションがないので最初に実行
-  }, [Object.keys(actionDatas).join(',')]);
+  const [state, setState] = useState({
+    clickedUser: '',
+  });
+
+  // TODO: カード選択時に確認
+  const RoleCard = props => {
+    const { onClick, cardText = '', imageName = 'card-back' } = props;
+    return (
+      <Grid item xs={3} onClick={onClick}>
+        <LoadingCard
+          imageName={imageName}
+          isLoading={actionState === 'executing'}
+          // selected={actionData.selectUserId === uid}
+          // disabled={actionData.selectUserId || actionState === 'executing'}
+        />
+        <Typography variant="caption">{cardText}</Typography>
+      </Grid>
+    );
+  };
 
   return (
     <Box className={classes.paper}>
@@ -89,28 +113,35 @@ const Werewolf = props => {
       <Typography color="secondary" variant="h6">
         仲間の人狼
       </Typography>
-      {Object.keys(actionDatas).length === 1 && (
-        <Typography>仲間はいません</Typography>
+      {actionData.selectUserId && Object.keys(actionDatas).length === 1 && (
+        <Box className={classes.box}>
+          <Typography variant="body2">仲間はいませんでした</Typography>
+        </Box>
       )}
       <Grid container spacing={2} className={classes.roles}>
         {Object.keys(actionDatas)
           .filter(userId => userId !== uid)
           .map((userId, index) => {
-            console.log(userId);
             return (
-              <Grid
-                item
-                xs={3}
-                onClick={() => fetchAssignedRoles(roomId, userId)}
-              >
-                <img
-                  src={`${process.env.PUBLIC_URL}/cards/${actionData.beforeRole}.png`}
-                  className={classes.roleCard}
-                />
-                <Typography variant="caption">{`${joinUsers[userId].name}`}</Typography>
-              </Grid>
+              <RoleCard
+                key={index}
+                cardText={joinUsers[userId].name}
+                imageName={actionDatas[userId].beforeRole}
+              />
             );
           })}
+        {!actionData.selectUserId && (
+          <RoleCard
+            key="card-back"
+            cardText="タップして仲間を確認"
+            onClick={() => {
+              if (!actionData.selectUserId) {
+                setState({ ...state, clickedUser: uid });
+                fetchAssignedRoles(roomId, uid);
+              }
+            }}
+          />
+        )}
       </Grid>
     </Box>
   );

@@ -51,7 +51,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-const Villager = props => {
+const MadMan = props => {
   const classes = useStyles();
   const {
     uid,
@@ -136,4 +136,4 @@ const mapDispatchToProps = dispatch => {
   return {};
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(Villager);
+export default connect(mapStateToProps, mapDispatchToProps)(MadMan);

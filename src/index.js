@@ -19,6 +19,11 @@ import {
   isLoaded,
 } from 'react-redux-firebase';
 import firebaseConfig from './config/firebaseConfig';
+import { Helmet } from 'react-helmet';
+
+if (process.env.NODE_ENV !== 'development') {
+  console.log = () => {};
+}
 
 const middlewares = [thunk.withExtraArgument({ getFirebase, getFirestore })];
 
@@ -41,6 +46,31 @@ const AuthIsLoaded = ({ children }) => {
 };
 ReactDOM.render(
   <React.StrictMode>
+    <Helmet
+      title="ワンナイト人狼オンライン"
+      meta={[
+        {
+          name: 'viewport',
+          content: 'width=device-width, initial-scale=1, user-scalable=no',
+        },
+        {
+          name: 'description',
+          content: 'ワンナイト人狼をオンラインで遊べるサイトです。',
+        },
+        {
+          property: 'og:title',
+          content: 'ワンナイト人狼オンライン',
+        },
+        {
+          property: 'og:description',
+          content: 'ワンナイト人狼をオンラインで遊べるサイトです。',
+        },
+        {
+          property: 'og:image',
+          content: `${process.env.PUBLIC_URL}/favicon.ico`,
+        },
+      ]}
+    />
     <Provider store={store}>
       <ReactReduxFirebaseProvider {...rrfProps}>
         <AuthIsLoaded>

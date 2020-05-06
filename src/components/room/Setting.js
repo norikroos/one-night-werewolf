@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
 import AddCircleIcon from '@material-ui/icons/AddCircle';
 import RemoveCircleIcon from '@material-ui/icons/RemoveCircle';
+import FileCopyIcon from '@material-ui/icons/FileCopy';
 import SettingsIcon from '@material-ui/icons/Settings';
 import { makeStyles } from '@material-ui/core/styles';
 import { blue, pink } from '@material-ui/core/colors';
@@ -11,6 +12,9 @@ import {
   CircularProgress,
   Container,
   Grid,
+  Input,
+  InputLabel,
+  InputAdornment,
   List,
   ListItem,
   ListItemIcon,
@@ -18,8 +22,8 @@ import {
   TextField,
   Typography,
 } from '@material-ui/core';
-import SignOutLink from '../layout/SignOutLink';
 import LoadingButton from '../common/LoadingButton';
+import SlideSnackbar from '../common/SlideSnackbar';
 
 import { connect } from 'react-redux';
 import {
@@ -33,7 +37,7 @@ import {
 
 const useStyles = makeStyles(theme => ({
   paper: {
-    marginTop: theme.spacing(2),
+    marginTop: theme.spacing(3),
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -107,6 +111,10 @@ const Setting = props => {
 
   const classes = useStyles();
 
+  const [state, setState] = useState({
+    open: false,
+  });
+
   const isActiveAddButton = roleKey => {
     const selectedRoleCount = selectedRoles.filter(r => r === roleKey).length;
     const selectedRole = roles[roleKey];
@@ -136,33 +144,59 @@ const Setting = props => {
     return false;
   };
 
+  const handleClick = () => {
+    const target = document.querySelector(`input[value="${roomId}"`);
+    // e.target.select();
+    target.select();
+    document.execCommand('copy');
+    setState({
+      open: true,
+    });
+  };
+
+  const handleClose = (event, reason) => {
+    setState({ ...state, open: false });
+  };
+
   return (
     <Container component="main" maxWidth="xs">
       <div className={classes.paper}>
-        <SignOutLink />
         <Avatar className={classes.avatar}>
           <SettingsIcon />
         </Avatar>
         <Typography component="h1" variant="h5">
           ゲーム設定
         </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <Typography variant="body2">
-              <TextField
-                label="ルームID"
-                defaultValue={roomId}
-                fullWidth
-                InputProps={{
-                  readOnly: true,
-                }}
-                onClick={e => {
-                  e.target.select();
-                }}
-              />
-            </Typography>
-          </Grid>
-        </Grid>
+        <Box className={classes.box}>
+          <Typography variant="body2">
+            <InputLabel shrink>ルームID</InputLabel>
+            <Input
+              value={roomId}
+              fullWidth
+              readOnly={true}
+              endAdornment={
+                <InputAdornment
+                  onClick={e => e.preventDefault()}
+                  position="end"
+                >
+                  <FileCopyIcon />
+                </InputAdornment>
+              }
+              onClick={handleClick}
+              // onChange={e => {
+              //   e.target.value = roomId;
+              //   e.target.dispatchEvent(
+              //     new KeyboardEvent('keydown', { key: 'Enter' })
+              //   );
+              // }}
+            />
+            <SlideSnackbar
+              handleClose={handleClose}
+              open={state.open}
+              message="クリップボードにコピーしました"
+            />
+          </Typography>
+        </Box>
         <Box className={classes.box}>
           <Typography variant="h6">
             参加者 ({Object.keys(joinUsers).length}人)
@@ -238,7 +272,9 @@ const Setting = props => {
             <Typography variant="body2">3人以上で開始できます</Typography>
           )}
           {uid !== createdBy && (
-            <Typography variant="body2">管理者のみ操作できます</Typography>
+            <Typography variant="body2">
+              ルーム管理者のみ操作できます
+            </Typography>
           )}
           <LoadingButton
             type="submit"

@@ -1,3 +1,9 @@
+export const removeError = () => {
+  return dispatch => {
+    dispatch({ type: 'REMOVE_ERROR', payload: {} });
+  };
+};
+
 export const resetActiveRoom = () => {
   return dispatch => {
     dispatch({ type: 'RESET_ACTIVE_ROOM', payload: {} });
@@ -97,7 +103,6 @@ export const fetchJoinUsers = roomId => {
     //引数を付けて呼び出し
     func({ roomId })
       .then(res => {
-        console.log(res);
         dispatch({ type: 'FETCH_JOIN_USERS_SUCCESS', payload: res.data });
       })
       .catch(err => {
@@ -138,7 +143,6 @@ export const fetchRoomInfo = roomId => {
       .doc(roomId)
       .get()
       .then(doc => {
-        console.log(doc.data());
         dispatch({
           type: 'FETCH_ROOM_INFO_SUCCESS',
           payload: doc.data(),
@@ -182,7 +186,7 @@ export const listenRoomUpdate = roomId => (
     .collection('rooms')
     .doc(roomId)
     .onSnapshot(doc => {
-      console.log('room state is updated', doc.data());
+      console.log('room state is updated');
       if (doc.data() && doc.data().state !== state.room.state) {
         dispatch({
           type: 'UPDATE_ROOM_STATE',
@@ -192,36 +196,13 @@ export const listenRoomUpdate = roomId => (
     });
 };
 
-export const fetchAuthUserRoles = roomId => {
-  return (dispatch, getState, { getFirebase, getFirestore }) => {
-    dispatch({ type: 'FETCHING_JOIN_USERS', payload: {} });
-    const functions = getFirebase().app().functions('asia-northeast1');
-    const func = functions.httpsCallable('fetchAuthUserRoles');
-    func({ roomId })
-      .then(res => {
-        console.log(res);
-        dispatch({
-          type: 'FETCH_AUTH_USER_ROLE_SUCCESS',
-          payload: res.data,
-        });
-      })
-      .catch(err => {
-        dispatch({ type: 'FETCH_AUTH_USER_ROLE_FAILURE', payload: err });
-      });
-  };
-};
-
 export const fetchAssignedRoles = (roomId, selectUserId = null) => {
   return (dispatch, getState, { getFirebase, getFirestore }) => {
     dispatch({ type: 'EXECUTING_ACTION', payload: {} });
-    const state = getState();
-    const uid = state.firebase.auth.uid;
-    const roleDatas = state.room.actionDatas;
     const functions = getFirebase().app().functions('asia-northeast1');
     const func = functions.httpsCallable('fetchAssignedRoles');
     func({ roomId, selectUserId })
       .then(res => {
-        console.log(res);
         dispatch({
           type: 'EXECUTE_ROLE_ACTION_SUCCESS',
           payload: res.data,
@@ -243,7 +224,6 @@ export const finishRoleAction = roomId => {
     const actionData = state.room.actionDatas[uid];
     func({ roomId })
       .then(res => {
-        console.log(res);
         dispatch({
           type: 'FINISH_ACTION_SUCCESS',
           payload: { [uid]: { ...actionData, ...res.data } },
@@ -251,6 +231,84 @@ export const finishRoleAction = roomId => {
       })
       .catch(err => {
         dispatch({ type: 'FINISH_ACTION_FAILURE', payload: err });
+      });
+  };
+};
+
+export const finishDiscussion = roomId => {
+  return (dispatch, getState, { getFirebase, getFirestore }) => {
+    dispatch({ type: 'FINISHING_DISCUSSION', payload: {} });
+    const functions = getFirebase().app().functions('asia-northeast1');
+    const func = functions.httpsCallable('finishDiscussion');
+    func({ roomId })
+      .then(res => {
+        dispatch({
+          type: 'FINISH_DISCUSSION_SUCCESS',
+          payload: res.data,
+        });
+      })
+      .catch(err => {
+        dispatch({ type: 'FINISH_DISCUSSION_FAILURE', payload: err });
+      });
+  };
+};
+
+// ユーザーを処刑
+export const executeUser = (roomId, selectUserId) => {
+  return (dispatch, getState, { getFirebase, getFirestore }) => {
+    dispatch({ type: 'EXECUTING_USER', payload: {} });
+    const functions = getFirebase().app().functions('asia-northeast1');
+    const func = functions.httpsCallable('executeUser');
+    const state = getState();
+    const uid = state.firebase.auth.uid;
+    const actionData = state.room.actionDatas[uid];
+    func({ roomId, selectUserId })
+      .then(res => {
+        dispatch({
+          type: 'FINISH_EXECUTE_USER_SUCCESS',
+          payload: { [uid]: { ...actionData, ...res.data } },
+        });
+      })
+      .catch(err => {
+        dispatch({ type: 'FINISH_EXECUTE_USER_FAILURE', payload: err });
+      });
+  };
+};
+
+// ユーザーを処刑
+export const fetchResult = roomId => {
+  return (dispatch, getState, { getFirebase, getFirestore }) => {
+    dispatch({ type: 'FETCHING_RESULT', payload: {} });
+    const functions = getFirebase().app().functions('asia-northeast1');
+    const func = functions.httpsCallable('fetchResult');
+    func({ roomId })
+      .then(res => {
+        dispatch({
+          type: 'FINISH_FETCH_RESULT_SUCCESS',
+          payload: res.data,
+        });
+      })
+      .catch(err => {
+        dispatch({ type: 'FINISH_FETCH_RESULT_FAILURE', payload: err });
+      });
+  };
+};
+
+// ゲームを初期化
+export const resetGame = roomId => {
+  return (dispatch, getState, { getFirebase, getFirestore }) => {
+    dispatch({ type: 'RESETTING_GAME', payload: {} });
+    const functions = getFirebase().app().functions('asia-northeast1');
+    const func = functions.httpsCallable('resetGame');
+    func({ roomId })
+      .then(res => {
+        dispatch({
+          type: 'RESET_GAME_SUCCESS',
+          payload: res.data,
+        });
+      })
+      .catch(err => {
+        dispatch({ type: 'RESET_GAME_FAILURE', payload: err });
       });
   };
 };

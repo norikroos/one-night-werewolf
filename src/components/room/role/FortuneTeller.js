@@ -19,6 +19,7 @@ import {
   Typography,
 } from '@material-ui/core';
 import { connect } from 'react-redux';
+import LoadingCard from '../../common/LoadingCard';
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -58,45 +59,85 @@ const FortuneTeller = props => {
     actionDatas,
     joinUsers,
     fetchAssignedRoles,
+    actionState,
   } = props;
   const actionData = actionDatas[uid];
-  console.log(actionData);
-  console.log(roles);
-  console.log(roles[actionData.beforeRole]);
 
-  const MemberRoleCards = Object.keys(joinUsers)
-    .filter(userId => userId !== uid)
-    .map((userId, index) => {
-      const roleName = actionDatas[userId]?.beforeRole || 'card-back';
-      return (
-        <Grid item xs={3} onClick={() => fetchAssignedRoles(roomId, userId)}>
-          <img
-            src={`${process.env.PUBLIC_URL}/cards/${roleName}.png`}
-            className={classes.roleCard}
-          />
-          <Typography variant="caption">{`${joinUsers[userId].name}`}</Typography>
-        </Grid>
-      );
-    });
+  const [state, setState] = useState({
+    clickedUser: '',
+  });
 
-  const OtherRoleCards = (
-    <Grid item xs={3} onClick={() => fetchAssignedRoles(roomId, 'others')}>
-      <div>
-        <img
-          src={`${process.env.PUBLIC_URL}/cards/${
-            actionDatas['NoUser1']?.beforeRole || 'card-back'
-          }.png`}
-          className={classes.remainCard}
-        />
-      </div>
-      <div>
-        <img
-          src={`${process.env.PUBLIC_URL}/cards/${
-            actionDatas['NoUser2']?.beforeRole || 'card-back'
-          }.png`}
-          className={classes.remainCard}
-        />
-      </div>
+  // TODO: カード選択時に確認
+  const MemberRoleCards = props =>
+    Object.keys(joinUsers)
+      .filter(userId => userId !== uid)
+      .map((userId, index) => {
+        const roleName = actionDatas[userId]?.beforeRole || 'card-back';
+        return (
+          <Grid
+            item
+            xs={3}
+            onClick={() => {
+              if (!actionData.selectUserId) {
+                setState({ ...state, clickedUser: userId });
+                fetchAssignedRoles(roomId, userId);
+              }
+            }}
+            key={index}
+          >
+            <LoadingCard
+              imageName={roleName}
+              isLoading={
+                state.clickedUser === userId && actionState === 'executing'
+              }
+              selected={actionData.selectUserId === userId}
+              disabled={
+                (actionData.selectUserId &&
+                  actionData.selectUserId !== userId) ||
+                actionState === 'executing'
+              }
+            />
+            <Typography variant="caption">{`${joinUsers[userId].name}`}</Typography>
+          </Grid>
+        );
+      });
+
+  // TODO: カード選択時に確認
+  const OtherRoleCards = props => (
+    <Grid
+      item
+      xs={3}
+      onClick={() => {
+        if (!actionData.selectUserId) {
+          setState({ ...state, clickedUser: 'others' });
+          fetchAssignedRoles(roomId, 'others');
+        }
+      }}
+    >
+      <LoadingCard
+        className={classes.remainCard}
+        imageName={`${actionDatas['NoUser1']?.beforeRole || 'card-back'}`}
+        isLoading={
+          state.clickedUser === 'others' && actionState === 'executing'
+        }
+        // selected={actionData.selectUserId === 'others'}
+        disabled={
+          (actionData.selectUserId && actionData.selectUserId !== 'others') ||
+          actionState === 'executing'
+        }
+      />
+      <LoadingCard
+        className={classes.remainCard}
+        imageName={`${actionDatas['NoUser2']?.beforeRole || 'card-back'}`}
+        isLoading={
+          state.clickedUser === 'others' && actionState === 'executing'
+        }
+        // selected={actionData.selectUserId === 'others'}
+        disabled={
+          (actionData.selectUserId && actionData.selectUserId !== 'others') ||
+          actionState === 'executing'
+        }
+      />
       <Typography variant="caption">{`残りのカード`}</Typography>
     </Grid>
   );
@@ -120,8 +161,8 @@ const FortuneTeller = props => {
       </Typography>
       <Typography variant="h6">占う</Typography>
       <Grid container spacing={2} className={classes.roles}>
-        {MemberRoleCards}
-        {OtherRoleCards}
+        <MemberRoleCards />
+        <OtherRoleCards />
       </Grid>
     </Box>
   );

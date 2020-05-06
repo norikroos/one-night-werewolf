@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import Setting from './Setting';
-import RoleAction from './RoleAction';
 import { connect } from 'react-redux';
 import {
   fetchRoomInfo,
   listenRoomUpdate,
   fetchJoinUsers,
+  resetGame,
 } from '../../store/actions/roomActions';
 import LoadingBox from '../common/LoadingBox';
 import { Redirect } from 'react-router-dom';
+
+import Setting from './Setting';
+import RoleAction from './RoleAction';
+import Discussion from './Discussion';
+import Vote from './Vote';
+import Result from './Result';
 
 const Room = props => {
   const {
@@ -18,13 +23,13 @@ const Room = props => {
     fetchRoomInfo,
     listenRoomUpdate,
     fetchJoinUsers,
+    fetchingUsers,
   } = props;
   const roomId = props.match.params.id;
 
   useEffect(() => {
     fetchRoomInfo(roomId);
     listenRoomUpdate(roomId);
-    console.log('render');
   }, [roomState]);
 
   useEffect(() => {
@@ -41,6 +46,18 @@ const Room = props => {
     if (roomState === 1) {
       return <RoleAction roomId={roomId} {...props} />;
     }
+    if (roomState === 2) {
+      return <Discussion roomId={roomId} {...props} />;
+    }
+    if (roomState === 3) {
+      return <Vote roomId={roomId} {...props} />;
+    }
+    if (roomState === 4) {
+      return <Result roomId={roomId} {...props} />;
+    }
+  }
+  if (!fetchingUsers && Object.keys(joinUsers).length > 0) {
+    // return <Redirect to={`/?redirectFrom=${document.location.pathname}`} />;
   }
   return <LoadingBox />;
 };
@@ -52,7 +69,10 @@ const mapStateToProps = state => {
     createdBy: state.room.createdBy,
     selectedRoles: state.room.selectedRoles,
     joinUsers: state.room.joinUsers,
+    fetchingUsers: state.room.fetchingUsers,
     roles: state.room.roles,
+    loading: state.room.loading,
+    resetting: state.room.resetting,
   };
 };
 
@@ -61,6 +81,7 @@ const mapDispatchToProps = dispatch => {
     fetchRoomInfo: roomId => dispatch(fetchRoomInfo(roomId)),
     listenRoomUpdate: roomId => dispatch(listenRoomUpdate(roomId)),
     fetchJoinUsers: roomId => dispatch(fetchJoinUsers(roomId)),
+    resetGame: roomId => dispatch(resetGame(roomId)),
   };
 };
 
