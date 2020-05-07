@@ -117,17 +117,21 @@ const Setting = props => {
 
   const isActiveAddButton = roleKey => {
     const selectedRoleCount = selectedRoles.filter(r => r === roleKey).length;
-    const selectedRole = roles[roleKey];
     const villagerCount = selectedRoles.filter(r => r === 'villager').length;
-    const villagerRole = roles['villager'];
+    const villagerTeamCount = selectedRoles.filter(r =>
+      Object.keys(roles)
+        .filter(roleName => roles[roleName].team === 'villager')
+        .includes(r)
+    ).length;
     if (
-      selectedRoleCount < selectedRole.max &&
-      villagerCount > villagerRole.min
+      selectedRoleCount < roles[roleKey].max &&
+      villagerCount > roles['villager'].min
     ) {
       if (
         // 人間サイドが最低一つ残るように
-        villagerCount === villagerRole.min + 1 &&
-        selectedRole.team !== villagerRole.team
+        villagerTeamCount === 1 &&
+        roles[roleKey].team !== roles['villager'].team &&
+        roleKey !== 'mad-man'
       ) {
         return false;
       }

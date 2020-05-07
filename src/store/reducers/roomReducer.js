@@ -12,6 +12,8 @@ const initState = {
     'fortune-teller': { nameJp: '占い師', team: 'villager', min: 0, max: 999 },
     'phantom-thief': { nameJp: '怪盗', team: 'villager', min: 0, max: 1 },
     villager: { nameJp: '村人', team: 'villager', min: 0, max: 999 },
+    'hanged-man': { nameJp: '吊人', team: 'hanged-man', min: 0, max: 1 },
+    'mad-man': { nameJp: '狂人', team: 'werewolf', min: 0, max: 999 },
   },
   creating: false,
   joining: false,

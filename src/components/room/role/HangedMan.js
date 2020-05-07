@@ -51,7 +51,7 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-const MadMan = props => {
+const HangedMan = props => {
   const classes = useStyles();
   const {
     uid,
@@ -112,14 +112,12 @@ const MadMan = props => {
           className={classes.roleCard}
           alt={actionData.beforeRole}
         />
-        <Typography variant="h5" color="secondary">
+        <Typography variant="h5">
           {roles[actionData.beforeRole].nameJp}
         </Typography>
       </Box>
       <Typography className={classes.description} variant="caption">
-        狂人はプレイヤーに人狼がいる場合、「人狼チーム」になります。ただし、狂人が誰が人狼か知ることはできません。
-        狂人が処刑されても、人狼チームが勝てば狂人も勝ちになります。狂人となったあなたは人狼が殺されないように村人を騙してください。
-        しかしプレイヤーに人狼がいない場合(平和村)、狂人は「村人チーム」となるため、狂人を処刑してはいけません。平和村になるように投票しましょう。
+        吊人(てるてる)は人狼チームにも村人チームにも属しません。処刑されたときに勝利します。人狼と疑われるように行動しましょう。
         <br />
         <br />
         怪しいと思う人物を一人選んでください。
@@ -139,4 +137,4 @@ const mapDispatchToProps = dispatch => {
   return {};
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(MadMan);
+export default connect(mapStateToProps, mapDispatchToProps)(HangedMan);

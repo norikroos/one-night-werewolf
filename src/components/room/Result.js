@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import GavelIcon from '@material-ui/icons/Gavel';
 import { makeStyles } from '@material-ui/core/styles';
-import { teal, pink } from '@material-ui/core/colors';
+import { teal, pink, yellow } from '@material-ui/core/colors';
 import {
   Avatar,
   Box,
@@ -21,6 +21,7 @@ import LoadingBox from '../common/LoadingBox';
 
 import { connect } from 'react-redux';
 import { fetchResult } from '../../store/actions/roomActions';
+import { toCamelcase } from '../../module/util';
 
 const useStyles = makeStyles(theme => ({
   paper: {
@@ -49,19 +50,17 @@ const useStyles = makeStyles(theme => ({
     width: '15%',
     maxWidth: '100%',
   },
-  textWerewolf: {
-    backgroundColor: pink[900],
-    textAlign: 'center',
-  },
   werewolf: {
     backgroundColor: pink[900],
-  },
-  textVillager: {
-    backgroundColor: teal[500],
     textAlign: 'center',
   },
   villager: {
     backgroundColor: teal[500],
+    textAlign: 'center',
+  },
+  hangedMan: {
+    backgroundColor: yellow[800],
+    textAlign: 'center',
   },
   listText: {
     marginLeft: theme.spacing(2),
@@ -90,18 +89,12 @@ const Result = props => {
     fetchResult(roomId);
   }, [Object.keys(actionDatas).join(',')]);
 
-  const villagerTeamRoles = Object.keys(roles).filter(
-    r => roles[r].team === 'villager'
-  );
-  const werewolfTeamRoles = Object.keys(roles).filter(
-    r => roles[r].team === 'werewolf'
-  );
-  const villagerTeamUsers = Object.keys(actionDatas).filter(userId =>
-    villagerTeamRoles.includes(actionDatas[userId].afterRole)
-  );
-  const werewolfTeamUsers = Object.keys(actionDatas).filter(userId =>
-    werewolfTeamRoles.includes(actionDatas[userId].afterRole)
-  );
+  const getTeamUsers = team =>
+    Object.keys(actionDatas).filter(userId =>
+      Object.keys(roles)
+        .filter(r => roles[r].team === team)
+        .includes(actionDatas[userId].afterRole)
+    );
 
   const userResults = {};
   Object.keys(actionDatas).forEach(votedUserId => {
@@ -113,34 +106,50 @@ const Result = props => {
     };
   });
 
+  // チームのリスト(重複を削除)
+  const teamList = Object.keys(roles)
+    .map(roleName => roles[roleName].team)
+    .filter((r, i, self) => self.indexOf(r) === i);
+
+  // 最大得票数
   const maxVotedCount = Math.max(
     ...Object.values(userResults).map(data => data.votedFrom?.length)
   );
 
+  // 最大得票数の役職
+  const maxVotedRoles = Object.values(userResults)
+    .filter(data => data.votedFrom.length === maxVotedCount)
+    .map(data => data.afterRole);
+
   // 勝利チーム(最大得票の人の中に人狼チームが入っているかどうかで判断)
-  const getWinTeam = () => {
-    // 最大得票数のチームのリスト
-    const maxVotedTeams = Object.values(userResults)
-      .filter(data => data.votedFrom.length === maxVotedCount)
-      .map(data => roles[data.afterRole]?.team);
-
-    if (maxVotedTeams.includes('hangedman')) return 'hangedman';
-    if (
-      maxVotedTeams.includes('werewolf') ||
-      (villagerTeamUsers.length === Object.keys(joinUsers).length &&
-        maxVotedCount === 1)
-    ) {
+  const judgeWinTeam = () => {
+    roles['mad-man'].team = 'werewolf';
+    if (maxVotedCount === 1) {
+      // 平和村時
+      if (maxVotedRoles.includes('werewolf')) return 'werewolf'; // 人狼が含まれている場合
+      roles['mad-man'].team = 'villager'; // 狂人のチームを村人側に変更
       return 'villager';
+    } else {
+      // 平和村以外
+      if (maxVotedRoles.includes('hanged-man')) return 'hanged-man'; // 吊人が処刑されている場合
+      if (maxVotedRoles.includes('werewolf')) return 'villager'; // 人狼が処刑されている場合
+      if (
+        !Object.values(userResults)
+          .map(data => data.afterRole)
+          .includes('werewolf')
+      ) {
+        // 人狼が役職にない場合
+        roles['mad-man'].team = 'villager'; // 狂人のチームを村人側に変更
+      }
+      return 'werewolf';
     }
-
-    return 'werewolf';
   };
 
   const RoleTeamList = ({ teamUsers }) => {
     return (
       <List dense={false}>
-        {teamUsers.map(userId => (
-          <UserListItem userId={userId} />
+        {teamUsers.map((userId, index) => (
+          <UserListItem key={index} userId={userId} />
         ))}
       </List>
     );
@@ -163,7 +172,9 @@ const Result = props => {
           <Typography variant="body1">
             {user.name}{' '}
             <Typography variant="caption" color="error">
-              {votedFrom.length === maxVotedCount ? '処刑' : ''}
+              {votedFrom.length === maxVotedCount && maxVotedCount > 1
+                ? '処刑'
+                : ''}
             </Typography>
           </Typography>
           <Typography className={classes.grey} variant="caption">
@@ -195,23 +206,23 @@ const Result = props => {
         {!loading ? (
           <Box className={classes.box} textAlign="center">
             <Typography variant="body1">
-              {`${roles[getWinTeam()].nameJp}チームの勝利！`}
+              {`${roles[judgeWinTeam()].nameJp}チームの勝利！`}
             </Typography>
             <Box className={classes.box}>
-              <Box className={classes.textWerewolf}>
-                <Typography variant="h6">人狼チーム</Typography>
-              </Box>
-              <Divider className={classes.werewolf} />
-              <div>
-                <RoleTeamList teamUsers={werewolfTeamUsers} />
-              </div>
-              <Box className={classes.textVillager}>
-                <Typography variant="h6">村人チーム</Typography>
-              </Box>
-              <Divider className={classes.villager} />
-              <div>
-                <RoleTeamList teamUsers={villagerTeamUsers} />
-              </div>
+              {teamList.map((team, index) => {
+                return (
+                  <div key={index}>
+                    <Box className={classes[toCamelcase(team)]}>
+                      <Typography variant="h6">
+                        {roles[team]?.nameJp}チーム
+                      </Typography>
+                    </Box>
+                    <div>
+                      <RoleTeamList teamUsers={getTeamUsers(team)} />
+                    </div>
+                  </div>
+                );
+              })}
             </Box>
           </Box>
         ) : (

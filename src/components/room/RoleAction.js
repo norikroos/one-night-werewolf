@@ -30,6 +30,8 @@ import Werewolf from './role/Werewolf';
 import FortuneTeller from './role/FortuneTeller';
 import PhantomThief from './role/PhantomThief';
 import Villager from './role/Villager';
+import HangedMan from './role/HangedMan';
+import MadMan from './role/MadMan';
 
 const useStyles = makeStyles(theme => ({}));
 
@@ -63,6 +65,12 @@ const RoleAction = props => {
       }
       case 'villager': {
         return <Villager {...props} />;
+      }
+      case 'hanged-man': {
+        return <HangedMan {...props} />;
+      }
+      case 'mad-man': {
+        return <MadMan {...props} />;
       }
       default: {
         return <div></div>;
