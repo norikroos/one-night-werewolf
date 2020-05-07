@@ -170,12 +170,21 @@ const Result = props => {
         />
         <div className={classes.listText}>
           <Typography variant="body1">
-            {user.name}{' '}
+            {user.name}
             <Typography variant="caption" color="error">
               {votedFrom.length === maxVotedCount && maxVotedCount > 1
-                ? '処刑'
-                : ''}
+                ? ' 処刑 '
+                : ' '}
             </Typography>
+            {roles[userResult.afterRole].team === judgeWinTeam() ? (
+              <Typography variant="caption" color="secondary">
+                Win
+              </Typography>
+            ) : (
+              <Typography variant="caption" color="primary">
+                Rose
+              </Typography>
+            )}
           </Typography>
           <Typography className={classes.grey} variant="caption">
             {'役職: ' +
