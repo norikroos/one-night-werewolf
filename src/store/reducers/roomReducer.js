@@ -88,6 +88,7 @@ const roomReducer = (state = initState, action) => {
       return {
         ...state,
         fetchingUsers: false,
+        errorMessage: action.payload.message,
       };
     case 'FETCH_ROOM_INFO_SUCCESS':
       console.log('fetch room success');

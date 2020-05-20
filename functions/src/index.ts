@@ -120,7 +120,6 @@ export const createRoom = functions
       name,
       count: 0,
       state: 0,
-      joinUsers: [{ id: userId }],
       selectedRoles: [
         "werewolf",
         "werewolf",

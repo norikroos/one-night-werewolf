@@ -5,6 +5,7 @@ import {
   listenRoomUpdate,
   fetchJoinUsers,
   resetGame,
+  removeError,
 } from '../../store/actions/roomActions';
 import LoadingBox from '../common/LoadingBox';
 import { Redirect } from 'react-router-dom';
@@ -23,7 +24,8 @@ const Room = props => {
     fetchRoomInfo,
     listenRoomUpdate,
     fetchJoinUsers,
-    fetchingUsers,
+    errorMessage,
+    removeError,
   } = props;
   const roomId = props.match.params.id;
 
@@ -56,8 +58,9 @@ const Room = props => {
       return <Result roomId={roomId} {...props} />;
     }
   }
-  if (!fetchingUsers && Object.keys(joinUsers).length > 0) {
-    // return <Redirect to={`/?redirectFrom=${document.location.pathname}`} />;
+  if (errorMessage) {
+    removeError();
+    return <Redirect to={`/?redirectFrom=${document.location.pathname}`} />;
   }
   return <LoadingBox />;
 };
@@ -69,10 +72,10 @@ const mapStateToProps = state => {
     createdBy: state.room.createdBy,
     selectedRoles: state.room.selectedRoles,
     joinUsers: state.room.joinUsers,
-    fetchingUsers: state.room.fetchingUsers,
     roles: state.room.roles,
     loading: state.room.loading,
     resetting: state.room.resetting,
+    errorMessage: state.room.errorMessage,
   };
 };
 
@@ -82,6 +85,7 @@ const mapDispatchToProps = dispatch => {
     listenRoomUpdate: roomId => dispatch(listenRoomUpdate(roomId)),
     fetchJoinUsers: roomId => dispatch(fetchJoinUsers(roomId)),
     resetGame: roomId => dispatch(resetGame(roomId)),
+    removeError: () => dispatch(removeError()),
   };
 };
 
