@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import Typography from '@material-ui/core/Typography';
-import Button from '@material-ui/core/Button';
-import IconButton from '@material-ui/core/IconButton';
-import { Avatar, Grid, Link } from '@material-ui/core';
+import {
+  AppBar,
+  Avatar,
+  Link,
+  Toolbar,
+  Typography,
+  IconButton,
+  Menu,
+  MenuItem,
+} from '@material-ui/core';
 import MenuIcon from '@material-ui/icons/Menu';
 import { Redirect } from 'react-router-dom';
 
@@ -35,41 +39,55 @@ const useStyles = makeStyles(theme => ({
 const Navbar = props => {
   const classes = useStyles();
   const { auth, signOut } = props;
+  console.log(props);
+  const [anchorEl, setAnchorEl] = React.useState(null);
 
-  const AuthButton = () => {
+  const AuthMenuItem = () => {
     if (auth.uid) {
       return (
-        <Button color="primary" onClick={() => signOut()}>
+        <MenuItem
+          onClick={() => {
+            handleClose();
+            signOut();
+          }}
+        >
           ログアウト
-        </Button>
+        </MenuItem>
       );
     }
     if (document.location.pathname === '/signin') {
       return (
-        <Button color="primary" href={`signup${document.location.search}`}>
+        <MenuItem
+          onClick={() => handleClose(`signup${document.location.search}`)}
+        >
           ユーザー登録
-        </Button>
+        </MenuItem>
       );
     }
     return (
-      <Button color="primary" href={`signin${document.location.search}`}>
+      <MenuItem
+        onClick={() => handleClose(`signin${document.location.search}`)}
+      >
         ログイン
-      </Button>
+      </MenuItem>
     );
+  };
+
+  const handleClick = event => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = toUrl => {
+    setAnchorEl(null);
+    if (toUrl) {
+      document.location.href = toUrl;
+    }
   };
 
   return (
     <div className={classes.root}>
       <AppBar elevation={1} position="static" color="transparent">
         <Toolbar>
-          {/* <IconButton
-            edge="start"
-            className={classes.menuButton}
-            color="inherit"
-            aria-label="menu"
-          >
-            <MenuIcon />
-          </IconButton> */}
           <IconButton
             edge="start"
             className={classes.menuButton}
@@ -89,7 +107,25 @@ const Navbar = props => {
               ワンナイト人狼オンライン
             </Link>
           </Typography>
-          <AuthButton />
+          <IconButton
+            edge="end"
+            className={classes.menuButton}
+            color="inherit"
+            aria-label="menu"
+            onClick={handleClick}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Menu
+            id="simple-menu"
+            anchorEl={anchorEl}
+            keepMounted
+            open={Boolean(anchorEl)}
+            onClose={() => handleClose()}
+          >
+            <MenuItem onClick={() => handleClose('/')}>ホーム</MenuItem>
+            <AuthMenuItem />
+          </Menu>
         </Toolbar>
       </AppBar>
     </div>
@@ -97,7 +133,6 @@ const Navbar = props => {
 };
 
 const mapStateToProps = state => {
-  console.log(state);
   return {
     auth: state.firebase.auth,
   };
