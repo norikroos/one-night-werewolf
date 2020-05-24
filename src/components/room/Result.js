@@ -182,7 +182,7 @@ const Result = props => {
               </Typography>
             ) : (
               <Typography variant="caption" color="primary">
-                Rose
+                Lose
               </Typography>
             )}
           </Typography>
